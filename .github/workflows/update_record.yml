@@ -21,4 +21,9 @@ jobs:
       - name: Build venv
         run: tox -e venv
       - name: Run script
+        env:
+            AUTH_JSON: ${{ secrets.AUTH_JSON }}
+            PETKIT_PASSWORD: ${{ secrets.PETKIT_PASSWORD }}
+            PETKIT_USERNAME: ${{ secrets.PETKIT_USERNAME }}
+            SPREADSHEET_ID: ${{ secrets.SPREADSHEET_ID }}
         run:  venv/bin/python -m script.update
