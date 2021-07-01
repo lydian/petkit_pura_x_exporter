@@ -1,0 +1,21 @@
+name: Update PetKit Record
+on:
+  schedule:
+      # * is a special character in YAML so you have to quote this string
+      - cron:  '*/15 * * * *'
+
+jobs:
+  Update-Records-Action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Install Tox and any other packages
+        run: pip install tox
+      - name: Build venv
+        run: tox -e venv
+      - name: Run script
+        run:  venv/bin/python -m scripts.update
