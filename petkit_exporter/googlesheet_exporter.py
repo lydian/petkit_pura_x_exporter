@@ -44,14 +44,30 @@ class GoogleSheetExporter:
                 ]
             }
         ).execute()
-        for sheet in pet_names + ["unknown"]:
-            range = f"{sheet}!A1:" + string.ascii_uppercase[len(PetEvent._fields) -1] + "1"
-            self.sheets_service.values().update(
-                spreadsheetId=self.spreadsheet_id,
-                range=range,
-                valueInputOption="RAW",
-                body={"values": [PetEvent._fields]}
-            ).execute()
+        return spread_sheet
+
+    def create_pet_info_sheet(self, pet_name):
+        self.sheets_service.batchUpdate(
+            spreadsheetId=self.spreadsheet_id,
+            body={
+                "requests": [{"addSheet": {"properties": {"title": pet_name}}}]
+            }
+        ).execute()
+        range = f"{pet_name}!A1:" + string.ascii_uppercase[len(PetEvent._fields) -1] + "1"
+        self.sheets_service.values().update(
+            spreadsheetId=self.spreadsheet_id,
+            range=range,
+            valueInputOption="RAW",
+            body={"values": [PetEvent._fields]}
+        ).execute()
+
+    def create_clean_info_sheet(self):
+        self.sheets_service.batchUpdate(
+            spreadsheetId=self.spreadsheet_id,
+            body={
+                "requests": [{"addSheet": {"properties": {"title": "other"}}}]
+            }
+        ).execute()
         self.sheets_service.values().update(
             spreadsheetId=self.spreadsheet_id,
             range="other!A1",
@@ -64,7 +80,6 @@ class GoogleSheetExporter:
             valueInputOption="RAW",
             body={"values": [CleanEvent._fields]}
         ).execute()
-        return spread_sheet
 
     def get_latest_updated_timestamp(self):
         val = self.sheets_service.values().get(
@@ -83,7 +98,18 @@ class GoogleSheetExporter:
             body={"values": [[value]]}
         ).execute()
 
+    def is_sheet_exists(self, sheet_name):
+        return sheet_name in [
+            s["properties"]["title"]
+            for s in self.sheets_service.get(
+                spreadsheetId=self.spreadsheet_id
+            ).execute()["sheets"]
+        ]
+
     def update(self, records):
+        if not self.is_sheet_exists("other"):
+            self.create_clean_info_sheet()
+
         last_timestamp = self.get_latest_updated_timestamp()
         sheets = defaultdict(list)
         new_ts = None
@@ -100,6 +126,8 @@ class GoogleSheetExporter:
                 sheets["other"].append(list(event))
 
         for sheet_name, rows in sheets.items():
+            if not self.is_sheet_exists(sheet_name):
+                self.create_pet_info_sheet(sheet_name)
             range = 'A:' + string.ascii_uppercase[
                 len(rows[0]) - 1]
             self.sheets_service.values().append(
