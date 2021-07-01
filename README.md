@@ -19,5 +19,6 @@ This is for exporting petkit pura X to external services (currently only support
     - `SPREADSHEET_ID`: The id of the spreadsheet that you had shared with the service account
     - `PETKIT_USERNAME`: the petkit app login user name
     - `PETKIT_PASSWORD`: the petkit app login password
+5. Please also make sure you have add the pets name and weight in the petkit app. The script uses that information to identify the cat.
 
 Once completed. The github action is schedule to run every 15 mins and will update the spreadsheet when there's newer event.
