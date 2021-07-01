@@ -18,4 +18,4 @@ jobs:
       - name: Build venv
         run: tox -e venv
       - name: Run script
-        run:  venv/bin/python -m scripts.update
+        run:  venv/bin/python -m script.update
