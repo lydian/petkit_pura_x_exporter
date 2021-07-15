@@ -11,8 +11,10 @@ from petkit_exporter.petkit import PetEvent
 class GoogleSheetExporter:
 
     def __init__(self, spreadsheet_id=None, auth_json=None):
-        self.creds = service_account.Credentials.from_service_account_info(auth_json)
-        self.sheets_service = build("sheets", "v4", credentials=self.creds).spreadsheets()
+        self.creds = service_account.Credentials.from_service_account_info(
+            auth_json)
+        self.sheets_service = build(
+            "sheets", "v4", credentials=self.creds).spreadsheets()
         self.spreadsheet_id = spreadsheet_id
 
     def create_sheet_and_share(self, file_name, share_email, pet_names):
@@ -53,7 +55,8 @@ class GoogleSheetExporter:
                 "requests": [{"addSheet": {"properties": {"title": pet_name}}}]
             }
         ).execute()
-        range = f"{pet_name}!A1:" + string.ascii_uppercase[len(PetEvent._fields) -1] + "1"
+        range = f"{pet_name}!A1:" + \
+            string.ascii_uppercase[len(PetEvent._fields) - 1] + "1"
         self.sheets_service.values().update(
             spreadsheetId=self.spreadsheet_id,
             range=range,
@@ -76,7 +79,8 @@ class GoogleSheetExporter:
         ).execute()
         self.sheets_service.values().update(
             spreadsheetId=self.spreadsheet_id,
-            range="other!A2:" + string.ascii_uppercase[len(CleanEvent._fields) - 1] + "2",
+            range="other!A2:" +
+            string.ascii_uppercase[len(CleanEvent._fields) - 1] + "2",
             valueInputOption="RAW",
             body={"values": [CleanEvent._fields]}
         ).execute()

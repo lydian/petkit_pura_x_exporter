@@ -10,6 +10,7 @@ PETKIT_API = "http://api.petkt.com"
 
 EVENT_TYPES = {
     5: "cleaning",
+    7: "reset",
     10: "pet in the litter box",
     8: "deorder"
 }
@@ -159,6 +160,20 @@ class PetKit:
                     refill_deoder=record["content"]["liquidLack"]
                 )
             )
+        if record["eventType"] == 7:
+            # reset
+            return (
+                record["timestamp"],
+                CleanEvent(
+                    self._format_time(record["content"]["startTime"]),
+                    self._format_time(record["timestamp"]),
+                    record["timestamp"] - record["content"]["startTime"],
+                    "reset",
+                    START_REASON.get(
+                        record["content"]["startReason"]) or record["content"]["startReason"],
+                )
+            )
+        return record["timestamp"], record
 
     def find_most_possible_pet(self, weight):
         if self.user is None:
