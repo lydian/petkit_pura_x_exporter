@@ -139,7 +139,8 @@ class PetKit:
                     self._format_time(record["timestamp"]),
                     record["timestamp"] - record["content"]["startTime"],
                     "clean",
-                    START_REASON[record["content"]["startReason"]],
+                    START_REASON.get(
+                        record["content"]["startReason"]) or record["content"]["startReason"],
                     litter_percent=record["content"]["litterPercent"],
                     need_clean=record["content"]["boxFull"]
                 )
