@@ -89,7 +89,7 @@ class PetKit:
     def _query(self, path: str) -> Dict:
         self.maybe_login()
         r = requests.post(
-            f"{PETKIT_API}{path}", headers={"X-Session": self.access_token}
+            f"{PETKIT_API}{path}", headers={"X-Session": self.access_token, 'X-Api-Version': '8.1.0'}
         )
         r.raise_for_status()
         response = r.json()
