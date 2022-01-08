@@ -16,5 +16,11 @@ google_sheet = GoogleSheetExporter(
     spreadsheet_id=spreadsheet_id
 )
 
-device_id = petkit.discover_devices()[0]["data"]["id"]
-google_sheet.update(petkit.get_device_records(device_id))
+devices = petkit.discover_devices()
+records = sorted([
+    r
+    for device in devices
+    for r in petkit.get_device_records(device)
+], key=lambda x: x[0]
+)
+google_sheet.update(records)

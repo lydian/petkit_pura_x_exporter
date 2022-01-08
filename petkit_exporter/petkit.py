@@ -1,7 +1,7 @@
 import datetime
 import hashlib
 from collections import namedtuple
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional
 
 import requests
 
@@ -28,6 +28,7 @@ PetEvent = namedtuple(
         "duration",
         "name",
         "weight",
+        "device_name"
     ],
     defaults=(None,) * 5
 )
@@ -43,8 +44,18 @@ CleanEvent = namedtuple(
         "need_clean",
         "deoder_percent",
         "refill_deoder",
+        "device_name"
     ],
     defaults=(None,) * 9
+)
+
+
+Device = namedtuple(
+    "Device", [
+        "id",
+        "name",
+        "type"
+    ]
 )
 
 
@@ -52,8 +63,8 @@ class PetkitURL:
     LOGIN = "/latest/user/login"
     USER_DETAILS = "/latest/user/details2"
     DISCOVERY = "/latest/discovery/device_roster"
-    PURAX_DETAILS = "/latest/t3/device_detail"
-    PURAX_RECORDS = "/latest/t3/getDeviceRecord"
+    PURAX_DETAILS = "/latest/{device_type}/device_detail"
+    PURAX_RECORDS = "/latest/{device_type}/getDeviceRecord"
 
 
 class PetKit:
@@ -89,7 +100,7 @@ class PetKit:
     def _query(self, path: str) -> Dict:
         self.maybe_login()
         r = requests.post(
-            f"{PETKIT_API}{path}", headers={"X-Session": self.access_token, 'X-Api-Version': '8.1.0'}
+            f"{PETKIT_API}{path}", headers={"X-Session": self.access_token, 'X-Api-Version': '8.4.0'}
         )
         r.raise_for_status()
         response = r.json()
@@ -104,19 +115,22 @@ class PetKit:
         r = self._query(PetkitURL.USER_DETAILS)
         self.user = r["result"]["user"]
 
-    def discover_devices(self) -> List[Dict]:
+    def discover_devices(self) -> List[Device]:
         r = self._query(PetkitURL.DISCOVERY)
-        return r["result"]["devices"]
+        return [
+            Device(d["data"]["id"], d["data"]["name"], d["type"])
+            for d in r["result"]["devices"]
+        ]
 
-    def get_device_details(self, device_id: int) -> Dict:
-        r = self._query(f"{PetkitURL.PURAX_DETAILS}?id={device_id}")
+    def get_device_details(self, device:Device) -> Dict:
+        r = self._query(f"{PetkitURL.PURAX_DETAILS}?id={device.id}".format(device_type=device.type.lower()))
         return r["result"]
 
-    def get_device_records(self, device_id: int) -> List[Dict]:
-        r = self._query(f"{PetkitURL.PURAX_RECORDS}?deviceId={device_id}")
-        return [self.parse_record(row) for row in r["result"]]
+    def get_device_records(self, device:Device) -> List[Dict]:
+        r = self._query(f"{PetkitURL.PURAX_RECORDS}?deviceId={device.id}&date={datetime.date.today().strftime('%Y%m%d')}".format(device_type=device.type.lower()))
+        return [self.parse_record(device, row) for row in r["result"]]
 
-    def parse_record(self, record):
+    def parse_record(self, device: Device, record:Dict[str, Any]):
         if record["eventType"] == 10:
             # Pet in Litter box
             pet = self.find_most_possible_pet(record["content"]["petWeight"])
@@ -127,7 +141,8 @@ class PetKit:
                     self._format_time(record["content"]["timeOut"]),
                     record["content"]["timeOut"] - record["content"]["timeIn"],
                     (pet or {}).get("name"),
-                    record["content"]["petWeight"]
+                    record["content"]["petWeight"],
+                    device.name
                 )
             )
 
@@ -143,7 +158,8 @@ class PetKit:
                     START_REASON.get(
                         record["content"]["startReason"]) or record["content"]["startReason"],
                     litter_percent=record["content"]["litterPercent"],
-                    need_clean=record["content"]["boxFull"]
+                    need_clean=record["content"]["boxFull"],
+                    device_name=device.name
                 )
             )
         if record["eventType"] == 8:
@@ -157,7 +173,8 @@ class PetKit:
                     "deorder",
                     START_REASON[record["content"]["startReason"]],
                     deoder_percent=record["content"]["liquid"],
-                    refill_deoder=record["content"]["liquidLack"]
+                    refill_deoder=record["content"]["liquidLack"],
+                    device_name=device.name
                 )
             )
         if record["eventType"] == 7:
@@ -171,6 +188,7 @@ class PetKit:
                     "reset",
                     START_REASON.get(
                         record["content"]["startReason"]) or record["content"]["startReason"],
+                    device_name=device.name
                 )
             )
         return record["timestamp"], record
