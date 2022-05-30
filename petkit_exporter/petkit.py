@@ -87,7 +87,12 @@ class PetKit:
             data={
                 "username": self.user_name,
                 "password": self.password,
-                "encrypt": 1
+                "encrypt": 1,
+            },
+            headers={
+                "X-Img-Version": "1",
+                "X-Timezone": "-7.0",
+                "X-Api-Version": "8.10.4",
             }
         )
         r.raise_for_status()
@@ -98,9 +103,26 @@ class PetKit:
         ) + datetime.timedelta(seconds=session["expiresIn"])
 
     def _query(self, path: str) -> Dict:
+        print(path)
         self.maybe_login()
         r = requests.post(
-            f"{PETKIT_API}{path}", headers={"X-Session": self.access_token, 'X-Api-Version': '8.4.0'}
+            f"{PETKIT_API}{path}", headers={
+                "X-Session": self.access_token,
+                "Content-Type": "application/x-www-form-urlencoded",
+                "Accept": "*/*",
+                "X-Timezone": "-7.0",
+                "F-Session": self.access_token,
+                "Accept-Language": "en-US;q=1,zh-Hant-US;q=0.9",
+                "Accept-Encoding": "gzip, deflate",
+                "X-Api-Version": "8.10.4",
+                "X-Client": "ios(15.4.1;iPhone12,3)",
+                "User-Agent": "PETKIT/8.10.4 (iPhone; ios 15.4.1; Scale/3.00)",
+                "X-TimezoneId": "America/Los_Angeles",
+                "X-Img-Version": "1",
+                "X-Locale": "en_US",
+                "Connection": "keep-alive",
+
+            }
         )
         r.raise_for_status()
         response = r.json()
@@ -122,15 +144,18 @@ class PetKit:
             for d in r["result"]["devices"]
         ]
 
-    def get_device_details(self, device:Device) -> Dict:
-        r = self._query(f"{PetkitURL.PURAX_DETAILS}?id={device.id}".format(device_type=device.type.lower()))
+    def get_device_details(self, device: Device) -> Dict:
+        r = self._query(f"{PetkitURL.PURAX_DETAILS}?id={device.id}".format(
+            device_type=device.type.lower()))
         return r["result"]
 
-    def get_device_records(self, device:Device) -> List[Dict]:
-        r = self._query(f"{PetkitURL.PURAX_RECORDS}?deviceId={device.id}&date={datetime.date.today().strftime('%Y%m%d')}".format(device_type=device.type.lower()))
+    def get_device_records(self, device: Device) -> List[Dict]:
+        today = datetime.date.today().strftime("%Y%m%d")
+        r = self._query(f"{PetkitURL.PURAX_RECORDS}?deviceId={device.id}&date={today}&day={today}".format(
+            device_type=device.type.lower()))
         return [self.parse_record(device, row) for row in r["result"]]
 
-    def parse_record(self, device: Device, record:Dict[str, Any]):
+    def parse_record(self, device: Device, record: Dict[str, Any]):
         if record["eventType"] == 10:
             # Pet in Litter box
             pet = self.find_most_possible_pet(record["content"]["petWeight"])
