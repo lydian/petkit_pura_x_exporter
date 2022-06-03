@@ -103,7 +103,6 @@ class PetKit:
         ) + datetime.timedelta(seconds=session["expiresIn"])
 
     def _query(self, path: str) -> Dict:
-        print(path)
         self.maybe_login()
         r = requests.post(
             f"{PETKIT_API}{path}", headers={

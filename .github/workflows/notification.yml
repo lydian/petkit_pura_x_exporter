@@ -1,0 +1,27 @@
+name: Send litter box full notification
+on:
+  push:
+      branches:
+        - master
+  schedule:
+      # * is a special character in YAML so you have to quote this string
+      - cron:  '0 21 * * *'
+jobs:
+  Notification-Action:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - name: Setup Python
+        uses: actions/setup-python@v2
+        with:
+          python-version: '3.8'
+      - name: Install Tox and any other packages
+        run: pip install tox
+      - name: Build venv
+        run: tox -e venv
+      - name: Run script
+        env:
+            PETKIT_PASSWORD: ${{ secrets.PETKIT_PASSWORD }}
+            PETKIT_USERNAME: ${{ secrets.PETKIT_USERNAME }}
+            IFTTT_KEY: ${{ secrets.IFTTT_KEY }}
+        run:  venv/bin/python -m script.notification
