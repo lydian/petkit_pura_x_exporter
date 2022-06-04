@@ -108,18 +108,10 @@ class PetKit:
             f"{PETKIT_API}{path}", headers={
                 "X-Session": self.access_token,
                 "Content-Type": "application/x-www-form-urlencoded",
-                "Accept": "*/*",
-                "X-Timezone": "-7.0",
-                "F-Session": self.access_token,
-                "Accept-Language": "en-US;q=1,zh-Hant-US;q=0.9",
                 "Accept-Encoding": "gzip, deflate",
                 "X-Api-Version": "8.10.4",
-                "X-Client": "ios(15.4.1;iPhone12,3)",
+                # "X-Client": "ios(15.4.1;iPhone12,3)",
                 "User-Agent": "PETKIT/8.10.4 (iPhone; ios 15.4.1; Scale/3.00)",
-                "X-TimezoneId": "America/Los_Angeles",
-                "X-Img-Version": "1",
-                "X-Locale": "en_US",
-                "Connection": "keep-alive",
 
             }
         )
@@ -220,12 +212,16 @@ class PetKit:
     def find_most_possible_pet(self, weight):
         if self.user is None:
             self.get_user_details()
+
         pet = sorted(
             self.user["dogs"],
             key=lambda p: abs(p["weight"] * 1000 - weight)
         )[0]
-        if pet["weight"] > 600:
+
+        # way off
+        if abs(pet["weight"] * 1000 - weight) > 600:
             return None
+
         return pet
 
     def get_pet_names(self):
